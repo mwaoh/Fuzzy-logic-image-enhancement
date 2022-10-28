@@ -1,0 +1,52 @@
+clc 
+
+close all
+clear workspace
+% Coversion in gray scale
+I = imread('MRI.jpg');
+img2d = rgb2gray(I);
+figure(1)
+imshow(img2d)
+[y1,x1] = size(img2d);
+J = imnoise(img2d,'gaussian',0.02);
+figure(2)
+imshow(J);
+impixelinfo;
+% Extrac min and max from the image array
+minGrayLevel = min(J(:));
+maxGrayLevel = max(J(:));
+disp('minGrayLevel');
+disp('maxGrayLevel');
+% Array conversion
+Img = im2double(J);
+%Enhance
+enhanceFIS = mamfis('Name','image enhancement');
+enhanceFIS = addInput(enhanceFIS,[0 1],'Name','Img');
+enhanceFIS = addMF(enhanceFIS,'Img','trimf',[-0.4 0 0.4],'Name','DARK');
+enhanceFIS = addMF(enhanceFIS,'Img','trimf',[0.1 0.5 0.9],'Name','GRAY');
+enhanceFIS = addMF(enhanceFIS,'Img','trimf',[0.6 1 1.4],'Name','BRIGHT');
+enhanceFIS = addOutput(enhanceFIS,[0 1],'Name','Iout');
+enhanceFIS = addMF(enhanceFIS,'Iout','trimf',[-0.5 0 0.5],'Name','DARKER');
+enhanceFIS = addMF(enhanceFIS,'Iout','trimf',[0.2 0.7 1.2],'Name','GRAY');
+enhanceFIS = addMF(enhanceFIS,'Iout','trimf',[0.8 1.3 1.8],'Name','BRIGHTER');
+figure(3)
+subplot(2,1,1)
+plotmf(enhanceFIS,'input',1)
+title('Img')
+subplot(2,1,2)
+plotmf(enhanceFIS,'output',1)
+title('Iout')
+r1 = "If Img is DARK then Iout is DARKER";
+r2 = "If Img is GRAY then Iout is GRAY";
+r3 = "If Img is BRIGHT then Iout is BRIGHTER";
+enhanceFIS = addRule(enhanceFIS,[r1 r2 r3]);
+enhanceFIS.Rules
+Ieval = zeros(size(Img));
+for ii = 1:size(Img,1)
+    Ieval(ii,:) = evalfis(enhanceFIS,(Img(ii,:))');
+end
+figure(4)
+image(Ieval,'CDataMapping','scaled')
+colormap('gray')
+title('Image Enhancement Using Fuzzy Logic')
+writeFIS(enhanceFIS,'Fuzzy_Enhance')
